@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, use } from "react";
-import { useRouter } from "next/navigation";
-import { Box, Divider, IconButton, Paper, Typography } from "@mui/material";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { Box, Button, Divider, IconButton, Paper, Typography } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import EditOffIcon from "@mui/icons-material/EditOff";
+import EditIcon from "@mui/icons-material/Edit";
 import { useFilmStore } from "@/store/filmStore";
 import VideoPlayer from "@/components/VideoPlayer/VideoPlayer";
 import TaggingPanel from "@/components/TaggingPanel/TaggingPanel";
@@ -17,6 +19,13 @@ interface Props {
 export default function FilmReviewPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const readOnly = searchParams.get("mode") === "view";
+
+  function toggleReadOnly() {
+    router.replace(readOnly ? pathname : `${pathname}?mode=view`);
+  }
 
   const game = useFilmStore((s) => s.game);
   const plays = useFilmStore((s) => s.plays);
@@ -102,14 +111,14 @@ export default function FilmReviewPage({ params }: Props) {
           break;
         case "s":
         case "S":
-          if (taggingMode === "idle" || taggingMode === "started") {
+          if (!readOnly && (taggingMode === "idle" || taggingMode === "started")) {
             setPendingStart(player?.getCurrentTime() ?? 0);
             setTaggingMode("started");
           }
           break;
         case "e":
         case "E":
-          if (taggingMode === "started") {
+          if (!readOnly && taggingMode === "started") {
             setPlaying(false);
             setTaggingMode("form");
           }
@@ -149,6 +158,16 @@ export default function FilmReviewPage({ params }: Props) {
             {game.home_team ?? "?"} vs {game.away_team ?? "?"}
           </Typography>
         )}
+        <Box sx={{ flex: 1 }} />
+        <Button
+          size="small"
+          variant={readOnly ? "contained" : "outlined"}
+          color={readOnly ? "warning" : "inherit"}
+          startIcon={readOnly ? <EditOffIcon /> : <EditIcon />}
+          onClick={toggleReadOnly}
+        >
+          {readOnly ? "View only" : "Edit mode"}
+        </Button>
       </Box>
 
       <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -179,11 +198,11 @@ export default function FilmReviewPage({ params }: Props) {
             overflow: "hidden",
           }}
         >
-          <TaggingPanel gameId={id} />
+          <TaggingPanel gameId={id} readOnly={readOnly} />
         </Paper>
       </Box>
 
-      <ShortcutCheatsheet />
+      <ShortcutCheatsheet readOnly={readOnly} />
     </Box>
   );
 }

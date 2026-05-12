@@ -19,9 +19,10 @@ import { Play } from "@/types";
 
 interface Props {
   gameId: string;
+  readOnly?: boolean;
 }
 
-export default function TaggingPanel({ gameId }: Props) {
+export default function TaggingPanel({ gameId, readOnly = false }: Props) {
   const taggingMode = useFilmStore((s) => s.taggingMode);
   const addPlay = useFilmStore((s) => s.addPlay);
   const updatePlay = useFilmStore((s) => s.updatePlay);
@@ -85,14 +86,14 @@ export default function TaggingPanel({ gameId }: Props) {
       <Divider />
 
       <Box sx={{ flex: 1, overflowY: "auto" }}>
-        {taggingMode === "form" || taggingMode === "editing" ? (
+        {!readOnly && (taggingMode === "form" || taggingMode === "editing") ? (
           <TagForm
             gameId={gameId}
             onSaved={handleSaved}
             onCancel={handleCancel}
           />
         ) : (
-          <PlayList onDelete={(play) => setDeleteTarget(play)} />
+          <PlayList onDelete={(play) => setDeleteTarget(play)} readOnly={readOnly} />
         )}
       </Box>
 

@@ -2,7 +2,7 @@
 
 import { Box, Paper, Typography } from "@mui/material";
 
-const shortcuts = [
+const allShortcuts = [
   ["Space", "Play / Pause"],
   ["J / L", "Rewind / Forward 5s"],
   ["← / →", "Prev / Next play"],
@@ -12,7 +12,9 @@ const shortcuts = [
   ["P", "Toggle loop"],
 ];
 
-export default function ShortcutCheatsheet() {
+export default function ShortcutCheatsheet({ readOnly = false }: { readOnly?: boolean }) {
+  if (readOnly) return null;
+
   return (
     <Paper
       elevation={4}
@@ -33,7 +35,7 @@ export default function ShortcutCheatsheet() {
       >
         Shortcuts
       </Typography>
-      {shortcuts.map(([key, action]) => (
+      {allShortcuts.map(([key, action]) => (
         <Box
           key={key}
           sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}

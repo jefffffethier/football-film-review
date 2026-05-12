@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import {
   Box,
+  Chip,
   Divider,
   IconButton,
   List,
@@ -13,7 +15,9 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useFilmStore } from "@/store/filmStore";
-import { Play } from "@/types";
+import { Play, PlayType } from "@/types";
+
+const PLAY_TYPES: PlayType[] = ["run", "pass", "kick", "punt", "penalty"];
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -21,26 +25,31 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function playLabel(play: Play): string {
-  const yard = play.yard_line ? ` & ${play.yard_line}` : "";
-  return `${play.down}${ordinal(play.down)}${yard} | ${play.play_type} | ${play.result}`;
+function downLabel(down: number | null): string {
+  if (down === null) return "n/a";
+  const suffixes = ["st", "nd", "rd", "th"] as const;
+  return `${down}${suffixes[Math.min(down - 1, 3)]}`;
 }
 
-function ordinal(n: number): string {
-  return (["st", "nd", "rd", "th"] as const)[Math.min(n - 1, 3)] ?? "th";
+function playLabel(play: Play): string {
+  const yard = play.yard_line ? ` & ${play.yard_line}` : "";
+  return `${downLabel(play.down)}${yard} | ${play.play_type} | ${play.result}`;
 }
 
 interface Props {
   onDelete: (play: Play) => void;
+  readOnly?: boolean;
 }
 
-export default function PlayList({ onDelete }: Props) {
+export default function PlayList({ onDelete, readOnly = false }: Props) {
   const plays = useFilmStore((s) => s.plays);
   const currentPlayIndex = useFilmStore((s) => s.currentPlayIndex);
   const playerRef = useFilmStore((s) => s.playerRef);
   const setCurrentPlayIndex = useFilmStore((s) => s.setCurrentPlayIndex);
   const setEditingPlay = useFilmStore((s) => s.setEditingPlay);
   const setTaggingMode = useFilmStore((s) => s.setTaggingMode);
+
+  const [typeFilter, setTypeFilter] = useState<PlayType | null>(null);
 
   function jumpTo(index: number) {
     const play = plays[index];
@@ -55,6 +64,8 @@ export default function PlayList({ onDelete }: Props) {
     setTaggingMode("editing");
   }
 
+  const visible = typeFilter ? plays.filter((p) => p.play_type === typeFilter) : plays;
+
   if (plays.length === 0) {
     return (
       <Box sx={{ p: 2 }}>
@@ -66,46 +77,75 @@ export default function PlayList({ onDelete }: Props) {
   }
 
   return (
-    <List dense disablePadding>
-      {plays.map((play, i) => (
-        <Box key={play.id}>
-          <ListItemButton
-            selected={currentPlayIndex === i}
-            onClick={() => jumpTo(i)}
-            sx={{ pr: 10 }}
-          >
-            <ListItemText
-              primary={
-                <Typography variant="body2">{playLabel(play)}</Typography>
-              }
-              secondary={
-                <Typography variant="caption">
-                  {formatTime(play.start_time)}
-                </Typography>
-              }
-            />
-            <ListItemSecondaryAction>
-              <IconButton
-                size="small"
-                onClick={(e) => handleEdit(e, play)}
-                sx={{ mr: 0.5 }}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(play);
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItemButton>
-          <Divider />
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Box sx={{ px: 1.5, py: 1, display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+        {PLAY_TYPES.map((t) => (
+          <Chip
+            key={t}
+            label={t}
+            size="small"
+            variant={typeFilter === t ? "filled" : "outlined"}
+            color={typeFilter === t ? "primary" : "default"}
+            onClick={() => setTypeFilter(typeFilter === t ? null : t)}
+          />
+        ))}
+      </Box>
+      <Divider />
+
+      {visible.length === 0 ? (
+        <Box sx={{ p: 2 }}>
+          <Typography color="text.secondary" variant="body2">
+            No {typeFilter} plays tagged.
+          </Typography>
         </Box>
-      ))}
-    </List>
+      ) : (
+        <List dense disablePadding>
+          {visible.map((play) => {
+            const i = plays.indexOf(play);
+            return (
+              <Box key={play.id}>
+                <ListItemButton
+                  selected={currentPlayIndex === i}
+                  onClick={() => jumpTo(i)}
+                  sx={{ pr: readOnly ? 2 : 10 }}
+                >
+                  <ListItemText
+                    primary={
+                      <Typography variant="body2">{playLabel(play)}</Typography>
+                    }
+                    secondary={
+                      <Typography variant="caption">
+                        {formatTime(play.start_time)}
+                      </Typography>
+                    }
+                  />
+                  {!readOnly && (
+                    <ListItemSecondaryAction>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleEdit(e, play)}
+                        sx={{ mr: 0.5 }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(play);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  )}
+                </ListItemButton>
+                <Divider />
+              </Box>
+            );
+          })}
+        </List>
+      )}
+    </Box>
   );
 }
