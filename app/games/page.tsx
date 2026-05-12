@@ -23,13 +23,16 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import GameModal from "@/components/GameModal/GameModal";
+import EditGameModal from "@/components/EditGameModal/EditGameModal";
 import { Game } from "@/types";
 
 export default function GamesPage() {
   const router = useRouter();
   const [games, setGames] = useState<Game[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Game | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -43,6 +46,10 @@ export default function GamesPage() {
 
   function handleCreated(game: Game) {
     setGames((prev) => [game, ...prev]);
+  }
+
+  function handleSaved(updated: Game) {
+    setGames((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
   }
 
   async function handleDelete() {
@@ -104,7 +111,16 @@ export default function GamesPage() {
                   <TableCell sx={{ textTransform: "uppercase", fontSize: 12 }}>
                     {game.video_source}
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditTarget(game);
+                      }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
                     <IconButton
                       size="small"
                       onClick={(e) => {
@@ -126,6 +142,13 @@ export default function GamesPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreated={handleCreated}
+      />
+
+      <EditGameModal
+        open={!!editTarget}
+        game={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSaved={handleSaved}
       />
 
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>

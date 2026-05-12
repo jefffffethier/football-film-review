@@ -338,17 +338,6 @@ export default function GameModal({ open, onClose, onCreated }: Props) {
               </Box>
             )}
 
-            <TextField
-              select
-              label="Downs"
-              value={form.downs_config}
-              onChange={(e) => handleChange("downs_config", Number(e.target.value))}
-              fullWidth
-            >
-              <MenuItem value={4}>4 downs (youth)</MenuItem>
-              <MenuItem value={3}>3 downs (senior)</MenuItem>
-            </TextField>
-
             {error && (
               <Typography variant="body2" color="error">
                 {error}

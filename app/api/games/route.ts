@@ -13,11 +13,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { title, date, opponent, video_source, video_ref, downs_config } = body;
+  const { title, date, opponent, video_source, video_ref } = body;
 
   const { data, error } = await getSupabase()
     .from("games")
-    .insert({ title, date, opponent, video_source, video_ref, downs_config })
+    .insert({ title, date, opponent, video_source, video_ref, downs_config: 4 })
     .select()
     .single();
 
