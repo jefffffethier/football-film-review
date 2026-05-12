@@ -31,7 +31,8 @@ export interface Game {
   id: string;
   title: string;
   date: string;
-  opponent: string | null;
+  home_team: string | null;
+  away_team: string | null;
   video_source: VideoSource;
   video_ref: string;
   downs_config: number;

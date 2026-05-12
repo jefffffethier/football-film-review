@@ -143,9 +143,9 @@ export default function FilmReviewPage({ params }: Props) {
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h6">{game.title}</Typography>
-        {game.opponent && (
+        {(game.home_team || game.away_team) && (
           <Typography variant="body2" color="text.secondary">
-            vs {game.opponent}
+            {game.home_team ?? "?"} vs {game.away_team ?? "?"}
           </Typography>
         )}
       </Box>

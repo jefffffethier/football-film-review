@@ -9,12 +9,12 @@ export async function PATCH(
   const body = await request.json();
 
   // Only allow editing metadata — video source/ref are intentionally excluded
-  const { title, date, opponent, downs_config } = body;
+  const { title, date, home_team, away_team } = body;
   const patch: Record<string, unknown> = {};
   if (title !== undefined) patch.title = title;
   if (date !== undefined) patch.date = date;
-  if (opponent !== undefined) patch.opponent = opponent;
-  if (downs_config !== undefined) patch.downs_config = downs_config;
+  if (home_team !== undefined) patch.home_team = home_team;
+  if (away_team !== undefined) patch.away_team = away_team;
 
   const { data, error } = await getSupabase()
     .from("games")

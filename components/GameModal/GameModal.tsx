@@ -34,7 +34,8 @@ interface Props {
 const defaultForm = {
   title: "",
   date: "",
-  opponent: "",
+  home_team: "",
+  away_team: "",
   video_source: "youtube",
   video_ref: "",
   downs_config: 4,
@@ -199,12 +200,20 @@ export default function GameModal({ open, onClose, onCreated }: Props) {
               fullWidth
               slotProps={{ inputLabel: { shrink: true } }}
             />
-            <TextField
-              label="Opponent"
-              value={form.opponent}
-              onChange={(e) => handleChange("opponent", e.target.value)}
-              fullWidth
-            />
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <TextField
+                label="Home Team"
+                value={form.home_team}
+                onChange={(e) => handleChange("home_team", e.target.value)}
+                fullWidth
+              />
+              <TextField
+                label="Away Team"
+                value={form.away_team}
+                onChange={(e) => handleChange("away_team", e.target.value)}
+                fullWidth
+              />
+            </Box>
             <TextField
               select
               label="Video Source"

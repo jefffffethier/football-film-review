@@ -92,7 +92,7 @@ export default function GamesPage() {
               <TableRow>
                 <TableCell>Title</TableCell>
                 <TableCell>Date</TableCell>
-                <TableCell>Opponent</TableCell>
+                <TableCell>Teams</TableCell>
                 <TableCell>Source</TableCell>
                 <TableCell align="right" />
               </TableRow>
@@ -107,7 +107,11 @@ export default function GamesPage() {
                 >
                   <TableCell>{game.title}</TableCell>
                   <TableCell>{game.date}</TableCell>
-                  <TableCell>{game.opponent ?? "—"}</TableCell>
+                  <TableCell>
+                    {game.home_team || game.away_team
+                      ? `${game.home_team ?? "?"} vs ${game.away_team ?? "?"}`
+                      : "—"}
+                  </TableCell>
                   <TableCell sx={{ textTransform: "uppercase", fontSize: 12 }}>
                     {game.video_source}
                   </TableCell>

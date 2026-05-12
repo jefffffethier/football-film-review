@@ -76,9 +76,9 @@ export default function SharePage({ params }: Props) {
       <Typography variant="h5" sx={{ mb: 0.5 }}>
         🏈 {game.title}
       </Typography>
-      {game.opponent && (
+      {(game.home_team || game.away_team) && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          vs {game.opponent} · {game.date}
+          {game.home_team ?? "?"} vs {game.away_team ?? "?"} · {game.date}
         </Typography>
       )}
 

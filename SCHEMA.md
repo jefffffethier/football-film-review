@@ -15,7 +15,8 @@ CREATE TABLE games (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title           TEXT NOT NULL,               -- e.g. "Week 3 vs Tigers"
   date            DATE NOT NULL,
-  opponent        TEXT,
+  home_team       TEXT,
+  away_team       TEXT,
   video_source    TEXT NOT NULL CHECK (video_source IN ('youtube', 's3')),
   video_ref       TEXT NOT NULL,               -- YouTube URL or S3 object key
   downs_config    INTEGER NOT NULL DEFAULT 4,  -- 4 for youth, 3 for senior

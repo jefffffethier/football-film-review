@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -24,7 +25,8 @@ interface Props {
 export default function EditGameModal({ open, game, onClose, onSaved }: Props) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-  const [opponent, setOpponent] = useState("");
+  const [homeTeam, setHomeTeam] = useState("");
+  const [awayTeam, setAwayTeam] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,7 +35,8 @@ export default function EditGameModal({ open, game, onClose, onSaved }: Props) {
     if (game) {
       setTitle(game.title);
       setDate(game.date);
-      setOpponent(game.opponent ?? "");
+      setHomeTeam(game.home_team ?? "");
+      setAwayTeam(game.away_team ?? "");
       setError("");
     }
   }, [game]);
@@ -54,7 +57,8 @@ export default function EditGameModal({ open, game, onClose, onSaved }: Props) {
       body: JSON.stringify({
         title,
         date,
-        opponent: opponent || null,
+        home_team: homeTeam || null,
+        away_team: awayTeam || null,
       }),
     });
 
@@ -91,12 +95,20 @@ export default function EditGameModal({ open, game, onClose, onSaved }: Props) {
               fullWidth
               slotProps={{ inputLabel: { shrink: true } }}
             />
-            <TextField
-              label="Opponent"
-              value={opponent}
-              onChange={(e) => setOpponent(e.target.value)}
-              fullWidth
-            />
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <TextField
+                label="Home Team"
+                value={homeTeam}
+                onChange={(e) => setHomeTeam(e.target.value)}
+                fullWidth
+              />
+              <TextField
+                label="Away Team"
+                value={awayTeam}
+                onChange={(e) => setAwayTeam(e.target.value)}
+                fullWidth
+              />
+            </Box>
             {error && (
               <Typography variant="body2" color="error">
                 {error}
