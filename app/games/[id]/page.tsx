@@ -110,6 +110,7 @@ export default function FilmReviewPage({ params }: Props) {
         case "e":
         case "E":
           if (taggingMode === "started") {
+            setPlaying(false);
             setTaggingMode("form");
           }
           break;
