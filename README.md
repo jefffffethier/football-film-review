@@ -1,118 +1,252 @@
-# 🏈 CFL Film Analysis Tool
+# CFL Film Analysis Tool
 
-A personal web app for coaching Canadian youth football. Watch game footage, tag plays, and share clips with players — built for one coach, no fluff.
-
----
-
-## Overview
-
-This tool mimics the core coaching workflow of Hudl, tailored specifically for:
-- **Canadian football** (12 players, 4 downs for youth)
-- **Personal use** — one coach, no multi-tenancy
-- **Desktop-only** — optimized for wide-screen film review sessions
+A personal desktop web app for a youth Canadian football coach. Watch game footage, tag plays by down and formation, and share individual clips with players — built for one coach, one browser, no fluff.
 
 ---
 
-## Features
+## What's built
 
-- 📹 Watch game film (YouTube embed or S3-hosted MP4)
-- ⌨️ Live keyboard-driven play tagging while watching
-- 🏷️ Fixed tag schema tailored to Canadian youth football
-- 📋 Play list panel with click-to-jump navigation
-- 🔗 Shareable clip links for players (no player login required)
-- 🔁 Loop mode for repeating individual plays
-- 🔒 Single-password protection via environment variable
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React |
-| Database | Supabase (free tier) |
-| Video storage | AWS S3 |
-| Hosting | Vercel |
-| AI coding assistant | Claude Code |
+- Game library — create games, choose YouTube or S3 as the video source, configure 3 or 4 downs per game
+- Video player — custom controls bar with seekable scrubber, play markers, pending-start indicator, loop mode
+- Keyboard-driven tagging — press `S` to mark play start, `E` to mark play end, fill in a form, save
+- Play list — all tagged plays in chronological order, click any to jump, edit or delete inline
+- Share links — public per-play URL (`/share/{token}`) that works without a login
+- Single-password auth — one `APP_PASSWORD` env var, session stored in an encrypted cookie
 
 ---
 
-## Video Sources
+## Tech stack
 
-The app supports two video source types, transparently handled by the player component:
+| Layer | Technology | Version |
+|---|---|---|
+| Framework | Next.js (App Router) | 16.2.6 |
+| UI | React + MUI (dark theme) | 19.2.4 / 9.x |
+| State | Zustand | 5.x |
+| Video | react-player | 2.x |
+| Auth | iron-session | 8.x |
+| Database | Supabase (PostgreSQL) | free tier |
+| File storage | AWS S3 | SDK v3 |
+| Hosting | Vercel | free tier |
+
+---
+
+## Project structure
 
 ```
-video_source: "youtube" | "s3"
-video_ref:    "https://youtube.com/..." | "games/2026/game1.mp4"
-```
-
-- **YouTube** — paste a URL, zero storage cost, slightly limited player controls
-- **S3** — full player control, 1080p H.264 MP4, ~4–6 GB/hour
-- **Migration path** — YouTube → S3 anytime using `yt-dlp`, one database field update per game
-
----
-
-## Project Structure (planned)
-
-```
-/
-├── README.md
-├── SPEC.md              # Full product specification
-├── SCHEMA.md            # Database schema
-├── src/
-│   ├── components/
-│   │   ├── VideoPlayer/
-│   │   ├── TaggingPanel/
-│   │   ├── PlayList/
-│   │   └── ShortcutCheatsheet/
-│   ├── pages/
-│   └── lib/
+football-film-review/
+├── app/
+│   ├── layout.tsx                  # Root layout, MUI theme provider
+│   ├── page.tsx                    # Redirects → /games
+│   ├── games/
+│   │   ├── page.tsx                # Game library table
+│   │   └── [id]/page.tsx           # Film review editor (player + tagging)
+│   └── api/
+│       ├── auth/login/route.ts
+│       ├── auth/logout/route.ts
+│       ├── games/route.ts
+│       ├── games/[id]/route.ts
+│       ├── plays/route.ts
+│       ├── plays/[id]/route.ts
+│       ├── plays-by-game/[gameId]/route.ts
+│       ├── presign/route.ts         # Generates S3 pre-signed URLs
+│       └── share/[token]/route.ts
+├── components/
+│   ├── VideoPlayer/                 # react-player wrapper + custom controls
+│   ├── TaggingPanel/                # Switches between PlayList and TagForm
+│   ├── TagForm/                     # New / edit play form
+│   ├── PlayList/                    # Chronological play list
+│   ├── GameModal/                   # Create game dialog
+│   └── ShortcutCheatsheet/          # Always-visible keyboard reference
+├── lib/
+│   ├── supabase.ts                  # Supabase client (server-side only)
+│   ├── s3.ts                        # Pre-signed URL helper
+│   └── session.ts                   # iron-session config
+├── store/
+│   └── filmStore.ts                 # Zustand store (game, plays, playback state)
+├── types/
+│   └── index.ts                     # Game, Play, enums
 ├── supabase/
-│   └── migrations/
-└── .env.example
+│   └── migrations/0001_initial.sql  # games + plays DDL
+├── scripts/
+│   ├── migrate.mjs                  # Verify DB tables exist
+│   └── test-s3.mjs                  # Verify S3 credentials + permissions
+├── .env.local                       # Local secrets (never committed)
+└── .env.local.example               # Template
 ```
 
 ---
 
-## Getting Started
+## Prerequisites
 
-> Setup instructions will be added as the project is built.
+- **Node.js** 18 or later
+- **Supabase** project — [supabase.com](https://supabase.com), free tier is enough
+- **AWS account** with an S3 bucket and an IAM user (see below)
+- **Vercel** account for deployment (optional for local dev)
 
-### Prerequisites
-- Node.js
-- Vercel account
-- Supabase account (free tier)
-- AWS account (S3)
+---
 
-### Environment Variables
+## Local setup
 
-```env
-APP_PASSWORD=your_password_here
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-AWS_S3_BUCKET=
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_REGION=
+### 1. Install dependencies
+
+```bash
+npm install
 ```
 
+### 2. Create `.env.local`
+
+Copy the example and fill in every value:
+
+```bash
+cp .env.local.example .env.local
+```
+
+| Variable | Where to get it | Notes |
+|---|---|---|
+| `APP_PASSWORD` | You choose | The password you type on the login screen |
+| `SESSION_SECRET` | Generate (see below) | Encrypts the session cookie — must be 32+ chars |
+| `SUPABASE_URL` | Supabase → Settings → API | e.g. `https://xxxx.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` | Keep server-side only |
+| `AWS_S3_BUCKET` | Your bucket name | e.g. `my-football-film` |
+| `AWS_ACCESS_KEY_ID` | AWS → IAM → Users → your user → Security credentials | |
+| `AWS_SECRET_ACCESS_KEY` | Same — only shown at creation time | |
+| `AWS_REGION` | Your bucket's region | e.g. `us-east-1` |
+
+**Generate a session secret:**
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 3. Set up the database
+
+The Supabase tables are created automatically if they don't exist. Verify with:
+
+```bash
+node scripts/migrate.mjs
+```
+
+If the tables are missing, it will print the SQL to paste into the [Supabase SQL Editor](https://supabase.com/dashboard/project/_/sql/new).
+
+### 4. Set up S3 permissions
+
+Your IAM user needs this inline policy (AWS Console → IAM → Users → your user → Add permissions → Create inline policy → JSON):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::YOUR-BUCKET-NAME/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::YOUR-BUCKET-NAME"
+    }
+  ]
+}
+```
+
+Verify the connection:
+
+```bash
+node scripts/test-s3.mjs
+```
+
+All four checks (list, write, read via presigned URL, delete) should pass.
+
+### 5. Start the dev server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). You'll be prompted for `APP_PASSWORD`, then land on the game library.
+
 ---
 
-## Security
+## Using the app
 
-This is a personal tool. Security is intentionally minimal:
-- Single hardcoded password stored as an environment variable
-- No user accounts, no roles, no multi-tenancy
-- S3 bucket is private; clips are served via pre-signed URLs for sharing
+### Create a game
+
+Click **New Game**, enter a title, date, opponent (optional), choose a video source, and set the downs config (4 for youth, 3 for senior).
+
+- **YouTube** — paste the video URL directly
+- **S3** — enter the object key of a video already uploaded to your bucket (e.g. `games/2026/week1.mp4`)
+
+### Tag plays
+
+Open a game to enter the film review editor. Use keyboard shortcuts to tag plays while the video plays:
+
+| Key | Action |
+|---|---|
+| `Space` | Play / Pause |
+| `J` | Rewind 5 s |
+| `L` | Forward 5 s |
+| `←` / `→` | Jump to previous / next tagged play |
+| `1` / `2` / `3` | Speed 0.25× / 0.50× / 1.00× (S3 only) |
+| `S` | Mark play start (yellow pin on scrubber) |
+| `E` | Mark play end → opens tag form |
+| `P` | Toggle loop on current play |
+
+Fill in the tag form (down, yard line, formation, result, notes) and save. The play appears in the list and as a blue segment on the scrubber.
+
+### Share a clip
+
+Each tagged play has a **Share** link. The `/share/{token}` URL is public — players can open it without logging in. S3 clips are served via time-limited pre-signed URLs.
 
 ---
 
-## Cost Estimate
+## Uploading video to S3
+
+For S3-hosted games, upload your MP4 before creating the game record. The recommended format is H.264, 1080p.
+
+**Upload via AWS CLI:**
+
+```bash
+aws s3 cp game1.mp4 s3://YOUR-BUCKET-NAME/games/2026/game1.mp4
+```
+
+**Convert / download from YouTube using yt-dlp:**
+
+```bash
+yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]" \
+  -o "game1.mp4" "https://youtube.com/watch?v=..."
+```
+
+Then use `games/2026/game1.mp4` as the `video_ref` when creating the game.
+
+---
+
+## Deployment (Vercel)
+
+1. Push the repo to GitHub
+2. Import the repo in [vercel.com](https://vercel.com)
+3. Add all variables from `.env.local` under **Settings → Environment Variables**
+4. Deploy — Vercel auto-detects Next.js, no build config needed
+
+---
+
+## Cost estimate
 
 | Service | Estimated monthly cost |
 |---|---|
-| AWS S3 storage (~200 GB/season) | ~$4/month |
-| S3 egress (player film review) | ~$2–5/month |
+| AWS S3 storage (~200 GB/season) | ~$4 |
+| S3 egress (player film review) | ~$2–5 |
 | Supabase | Free tier |
 | Vercel | Free tier |
-| **Total** | **~$5–10/month** |
+| **Total** | **~$5–10 / month** |
+
+---
+
+## Security notes
+
+This is a personal tool with intentionally minimal auth:
+
+- One password gates the entire app via an encrypted `iron-session` cookie
+- `SUPABASE_SERVICE_ROLE_KEY` is used server-side only (API routes) — never exposed to the browser
+- S3 bucket is private; all object access goes through pre-signed URLs that expire after 1 hour
+- Share links expose only the single play's data, not the full game
