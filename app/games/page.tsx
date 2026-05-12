@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Autocomplete,
   Box,
   Button,
   Container,
@@ -19,6 +20,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
+  TextField,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
@@ -28,6 +31,14 @@ import GameModal from "@/components/GameModal/GameModal";
 import EditGameModal from "@/components/EditGameModal/EditGameModal";
 import { Game } from "@/types";
 
+type SortCol = "title" | "date" | "teams";
+type SortDir = "asc" | "desc";
+
+function teamsLabel(game: Game) {
+  if (!game.home_team && !game.away_team) return "";
+  return `${game.home_team ?? "?"} vs ${game.away_team ?? "?"}`;
+}
+
 export default function GamesPage() {
   const router = useRouter();
   const [games, setGames] = useState<Game[]>([]);
@@ -35,6 +46,10 @@ export default function GamesPage() {
   const [editTarget, setEditTarget] = useState<Game | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Game | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [teamFilter, setTeamFilter] = useState<string | null>(null);
+  const [sortCol, setSortCol] = useState<SortCol>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   useEffect(() => {
     fetch("/api/games")
@@ -61,6 +76,47 @@ export default function GamesPage() {
     setDeleting(false);
   }
 
+  function handleSort(col: SortCol) {
+    if (sortCol === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+  }
+
+  const teamOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const g of games) {
+      if (g.home_team) names.add(g.home_team);
+      if (g.away_team) names.add(g.away_team);
+    }
+    return Array.from(names).sort();
+  }, [games]);
+
+  const visibleGames = useMemo(() => {
+    let list = games;
+
+    if (teamFilter) {
+      const f = teamFilter.toLowerCase();
+      list = list.filter(
+        (g) =>
+          g.home_team?.toLowerCase().includes(f) ||
+          g.away_team?.toLowerCase().includes(f)
+      );
+    }
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortCol === "title") cmp = a.title.localeCompare(b.title);
+      else if (sortCol === "date") cmp = a.date.localeCompare(b.date);
+      else if (sortCol === "teams") cmp = teamsLabel(a).localeCompare(teamsLabel(b));
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return list;
+  }, [games, teamFilter, sortCol, sortDir]);
+
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Box
@@ -81,24 +137,65 @@ export default function GamesPage() {
         </Button>
       </Box>
 
+      {games.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Autocomplete
+            options={teamOptions}
+            value={teamFilter}
+            onChange={(_, val) => setTeamFilter(val)}
+            renderInput={(params) => (
+              <TextField {...params} label="Filter by team" size="small" />
+            )}
+            sx={{ maxWidth: 300 }}
+            clearOnEscape
+          />
+        </Box>
+      )}
+
       {games.length === 0 ? (
         <Typography color="text.secondary">
           No games yet. Add your first game to get started.
         </Typography>
+      ) : visibleGames.length === 0 ? (
+        <Typography color="text.secondary">No games match the filter.</Typography>
       ) : (
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Title</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Teams</TableCell>
+                <TableCell sortDirection={sortCol === "title" ? sortDir : false}>
+                  <TableSortLabel
+                    active={sortCol === "title"}
+                    direction={sortCol === "title" ? sortDir : "asc"}
+                    onClick={() => handleSort("title")}
+                  >
+                    Title
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sortDirection={sortCol === "date" ? sortDir : false}>
+                  <TableSortLabel
+                    active={sortCol === "date"}
+                    direction={sortCol === "date" ? sortDir : "asc"}
+                    onClick={() => handleSort("date")}
+                  >
+                    Date
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sortDirection={sortCol === "teams" ? sortDir : false}>
+                  <TableSortLabel
+                    active={sortCol === "teams"}
+                    direction={sortCol === "teams" ? sortDir : "asc"}
+                    onClick={() => handleSort("teams")}
+                  >
+                    Teams
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Source</TableCell>
                 <TableCell align="right" />
               </TableRow>
             </TableHead>
             <TableBody>
-              {games.map((game) => (
+              {visibleGames.map((game) => (
                 <TableRow
                   key={game.id}
                   hover
