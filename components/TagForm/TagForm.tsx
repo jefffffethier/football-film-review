@@ -34,7 +34,7 @@ const empty: FormState = {
 
 function playToForm(play: Play): FormState {
   return {
-    down: String(play.down),
+    down: play.down !== null ? String(play.down) : "na",
     yard_line: play.yard_line !== null ? String(play.yard_line) : "",
     field_zone: play.field_zone ?? "",
     play_type: play.play_type,
@@ -82,10 +82,11 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
     setLoading(true);
     setError("");
 
+    const down = form.down === "na" || form.down === "" ? null : Number(form.down);
     const payload =
       taggingMode === "editing" && editingPlay
         ? {
-            down: Number(form.down),
+            down,
             yard_line: form.yard_line ? Number(form.yard_line) : null,
             field_zone: form.field_zone || null,
             play_type: form.play_type,
@@ -97,7 +98,7 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
             game_id: gameId,
             start_time: pendingStart,
             end_time: endTime,
-            down: Number(form.down),
+            down,
             yard_line: form.yard_line ? Number(form.yard_line) : null,
             field_zone: form.field_zone || null,
             play_type: form.play_type,
@@ -140,10 +141,10 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
             label="Down"
             value={form.down}
             onChange={(e) => set("down", e.target.value)}
-            required
             size="small"
             fullWidth
           >
+            <MenuItem value="na">n/a</MenuItem>
             {downs.map((d) => (
               <MenuItem key={d} value={d}>
                 {d}

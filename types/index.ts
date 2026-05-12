@@ -43,7 +43,7 @@ export interface Play {
   game_id: string;
   start_time: number;
   end_time: number;
-  down: number;
+  down: number | null;
   yard_line: number | null;
   field_zone: FieldZone | null;
   play_type: PlayType;

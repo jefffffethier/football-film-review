@@ -35,7 +35,7 @@ CREATE TABLE plays (
   game_id         UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,
   start_time      NUMERIC NOT NULL,            -- seconds from video start
   end_time        NUMERIC NOT NULL,            -- seconds from video start
-  down            INTEGER NOT NULL CHECK (down BETWEEN 1 AND 4),
+  down            INTEGER CHECK (down BETWEEN 1 AND 4),      -- nullable = unknown/n/a
   yard_line       INTEGER CHECK (yard_line BETWEEN 1 AND 110),
   field_zone      TEXT CHECK (field_zone IN (
                     'own_end',
