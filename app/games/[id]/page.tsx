@@ -176,14 +176,17 @@ export default function FilmReviewPage({ params }: Props) {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            bgcolor: "black",
             minWidth: 0,
+            overflow: "hidden",
           }}
         >
-          <VideoPlayer
-            videoSource={game.video_source}
-            videoRef={game.video_ref}
-          />
+          <Box sx={{ flex: 1, minHeight: 0, bgcolor: "black" }}>
+            <VideoPlayer
+              videoSource={game.video_source}
+              videoRef={game.video_ref}
+            />
+          </Box>
+          <ShortcutCheatsheet readOnly={readOnly} />
         </Box>
 
         <Divider orientation="vertical" flexItem />
@@ -201,8 +204,6 @@ export default function FilmReviewPage({ params }: Props) {
           <TaggingPanel gameId={id} readOnly={readOnly} />
         </Paper>
       </Box>
-
-      <ShortcutCheatsheet readOnly={readOnly} />
     </Box>
   );
 }

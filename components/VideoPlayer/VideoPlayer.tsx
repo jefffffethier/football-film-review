@@ -112,6 +112,7 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
         position: "relative",
         width: "100%",
         aspectRatio: "16/9",
+        maxHeight: "100%",
         bgcolor: "black",
         display: "flex",
         alignItems: "center",
@@ -169,12 +170,25 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
-      {videoSlot}
+    <Box sx={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "black",
+          overflow: "hidden",
+        }}
+      >
+        {videoSlot}
+      </Box>
 
       {/* Controls bar */}
       <Box
         sx={{
+          flexShrink: 0,
           display: "flex",
           alignItems: "center",
           gap: 1,
