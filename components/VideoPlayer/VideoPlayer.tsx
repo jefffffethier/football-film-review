@@ -2,11 +2,14 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import ReactPlayer from "react-player";
-import { Box, Chip, IconButton, Typography } from "@mui/material";
+import { Box, Chip, IconButton, Slider, Typography } from "@mui/material";
 import LoopIcon from "@mui/icons-material/Loop";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
 import BrokenImageIcon from "@mui/icons-material/BrokenImage";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import VolumeDownIcon from "@mui/icons-material/VolumeDown";
+import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import { useFilmStore } from "@/store/filmStore";
 
 function fmt(secs: number) {
@@ -37,6 +40,8 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
   const [loadError, setLoadError] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
   const dragging = useRef(false);
 
   useEffect(() => {
@@ -137,6 +142,8 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
             ref={playerRef as any}
             url={url}
             playing={playing}
+            volume={volume}
+            muted={muted}
             playbackRate={videoSource === "s3" ? playbackRate : 1}
             progressInterval={250}
             onPlay={() => setPlaying(true)}
@@ -333,6 +340,40 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
             {playbackRate}×
           </Typography>
         )}
+
+        {/* Volume controls */}
+        <IconButton
+          size="small"
+          onClick={() => setMuted((m) => !m)}
+          sx={{ color: "white", flexShrink: 0 }}
+        >
+          {muted || volume === 0 ? (
+            <VolumeOffIcon fontSize="small" />
+          ) : volume < 0.5 ? (
+            <VolumeDownIcon fontSize="small" />
+          ) : (
+            <VolumeUpIcon fontSize="small" />
+          )}
+        </IconButton>
+        <Slider
+          size="small"
+          min={0}
+          max={1}
+          step={0.01}
+          value={muted ? 0 : volume}
+          onChange={(_e, val) => {
+            const v = val as number;
+            setVolume(v);
+            if (v > 0 && muted) setMuted(false);
+            if (v === 0) setMuted(true);
+          }}
+          sx={{
+            width: 80,
+            flexShrink: 0,
+            color: "grey.400",
+            "& .MuiSlider-thumb": { width: 10, height: 10 },
+          }}
+        />
       </Box>
     </Box>
   );
