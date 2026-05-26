@@ -276,7 +276,7 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
             const globalIndex = plays.indexOf(play);
             const isSelected = currentPlayIndex === globalIndex;
             const bg = isSelected
-              ? "rgba(245,166,35,0.16)"
+              ? "rgba(163,230,53,0.18)"
               : TYPE_TINTS[play.play_type][zebra[idx]];
             const tc = TYPE_COLORS[play.play_type];
             const outcomeFg = OUTCOME_FG[play.result];
@@ -300,11 +300,11 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
                   background: bg,
                   cursor: "pointer",
                   overflow: "hidden",
-                  outline: "1px solid transparent",
+                  outline: `1px solid ${isSelected ? "rgba(163,230,53,0.45)" : "transparent"}`,
                   outlineOffset: "-1px",
-                  transition: "outline-color 80ms",
+                  transition: "outline-color 80ms, background 80ms",
                   "&:hover": {
-                    outlineColor: "rgba(255,255,255,0.06)",
+                    outlineColor: isSelected ? "rgba(163,230,53,0.45)" : "rgba(255,255,255,0.06)",
                     "& .play-actions": { opacity: 1 },
                   },
                 }}

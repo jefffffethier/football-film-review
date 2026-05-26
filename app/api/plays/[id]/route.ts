@@ -7,11 +7,15 @@ export async function PUT(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { down, yard_line, field_zone, play_type, formation, result, notes } = body;
+  const { start_time, end_time, down, yard_line, field_zone, play_type, formation, result, notes } = body;
+
+  const patch: Record<string, unknown> = { down, yard_line, field_zone, play_type, formation, result, notes };
+  if (start_time !== undefined) patch.start_time = start_time;
+  if (end_time !== undefined) patch.end_time = end_time;
 
   const { data, error } = await getSupabase()
     .from("plays")
-    .update({ down, yard_line, field_zone, play_type, formation, result, notes })
+    .update(patch)
     .eq("id", id)
     .select()
     .single();

@@ -36,7 +36,9 @@ export interface Game {
   video_source: VideoSource;
   video_ref: string;
   downs_config: number;
+  reviewed: boolean;
   created_at: string;
+  play_count?: number;
 }
 
 export interface Play {

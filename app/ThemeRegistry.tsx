@@ -1,15 +1,27 @@
 "use client";
 
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
-import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
+import { ThemeProvider, createTheme, CssBaseline, alpha } from "@mui/material";
+
+declare module "@mui/material/styles" {
+  interface Palette {
+    tableHeader: string;
+  }
+  interface PaletteOptions {
+    tableHeader?: string;
+  }
+}
+
+const PRIMARY = "#FFB300";
 
 const theme = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#FFB300",
+      main: PRIMARY,
       contrastText: "#000000",
     },
+    tableHeader: alpha(PRIMARY, 0.18),
     background: {
       default: "#0D1117",
       paper: "#161B22",

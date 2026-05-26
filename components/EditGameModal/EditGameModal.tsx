@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   Stack,
   TextField,
   Typography,
@@ -27,6 +29,7 @@ export default function EditGameModal({ open, game, onClose, onSaved }: Props) {
   const [date, setDate] = useState("");
   const [homeTeam, setHomeTeam] = useState("");
   const [awayTeam, setAwayTeam] = useState("");
+  const [reviewed, setReviewed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -37,6 +40,7 @@ export default function EditGameModal({ open, game, onClose, onSaved }: Props) {
       setDate(game.date);
       setHomeTeam(game.home_team ?? "");
       setAwayTeam(game.away_team ?? "");
+      setReviewed(game.reviewed);
       setError("");
     }
   }, [game]);
@@ -59,6 +63,7 @@ export default function EditGameModal({ open, game, onClose, onSaved }: Props) {
         date,
         home_team: homeTeam || null,
         away_team: awayTeam || null,
+        reviewed,
       }),
     });
 
@@ -109,6 +114,15 @@ export default function EditGameModal({ open, game, onClose, onSaved }: Props) {
                 fullWidth
               />
             </Box>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={reviewed}
+                  onChange={(e) => setReviewed(e.target.checked)}
+                />
+              }
+              label="Reviewed"
+            />
             {error && (
               <Typography variant="body2" color="error">
                 {error}

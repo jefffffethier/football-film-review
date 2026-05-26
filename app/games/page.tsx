@@ -6,6 +6,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Chip,
   Container,
   Dialog,
   DialogActions,
@@ -162,55 +163,87 @@ export default function GamesPage() {
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell sortDirection={sortCol === "title" ? sortDir : false}>
+              <TableRow sx={{ bgcolor: (t) => t.palette.tableHeader }}>
+                <TableCell
+                  sortDirection={sortCol === "title" ? sortDir : false}
+                  sx={{ color: "text.primary" }}
+                >
                   <TableSortLabel
                     active={sortCol === "title"}
                     direction={sortCol === "title" ? sortDir : "asc"}
                     onClick={() => handleSort("title")}
+                    sx={{
+                      color: "text.primary !important",
+                      "& .MuiTableSortLabel-icon": { color: "text.primary !important" },
+                    }}
                   >
                     Title
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sortDirection={sortCol === "date" ? sortDir : false}>
+                <TableCell
+                  sortDirection={sortCol === "date" ? sortDir : false}
+                  sx={{ color: "text.primary" }}
+                >
                   <TableSortLabel
                     active={sortCol === "date"}
                     direction={sortCol === "date" ? sortDir : "asc"}
                     onClick={() => handleSort("date")}
+                    sx={{
+                      color: "text.primary !important",
+                      "& .MuiTableSortLabel-icon": { color: "text.primary !important" },
+                    }}
                   >
                     Date
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sortDirection={sortCol === "teams" ? sortDir : false}>
+                <TableCell
+                  sortDirection={sortCol === "teams" ? sortDir : false}
+                  sx={{ color: "text.primary" }}
+                >
                   <TableSortLabel
                     active={sortCol === "teams"}
                     direction={sortCol === "teams" ? sortDir : "asc"}
                     onClick={() => handleSort("teams")}
+                    sx={{
+                      color: "text.primary !important",
+                      "& .MuiTableSortLabel-icon": { color: "text.primary !important" },
+                    }}
                   >
                     Teams
                   </TableSortLabel>
                 </TableCell>
-                <TableCell>Source</TableCell>
+                <TableCell sx={{ color: "text.primary" }}>Source</TableCell>
+                <TableCell align="right" sx={{ color: "text.primary" }}>Plays</TableCell>
+                <TableCell sx={{ color: "text.primary" }}>Status</TableCell>
                 <TableCell align="right" />
               </TableRow>
             </TableHead>
             <TableBody>
-              {visibleGames.map((game) => (
+              {visibleGames.map((game, index) => (
                 <TableRow
                   key={game.id}
                   hover
-                  sx={{ cursor: "pointer" }}
+                  sx={{
+                    cursor: "pointer",
+                    bgcolor: index % 2 === 0 ? "inherit" : "action.hover",
+                  }}
                   onClick={() => router.push(`/games/${game.id}`)}
                 >
                   <TableCell>{game.title}</TableCell>
                   <TableCell>{game.date}</TableCell>
                   <TableCell>
                     {game.home_team || game.away_team
-                      ? `${game.home_team ?? "?"} vs ${game.away_team ?? "?"}`
+                      ? `${game.away_team ?? "?"} vs ${game.home_team ?? "?"}`
                       : "—"}
                   </TableCell>
                   <TableCell sx={{ textTransform: "uppercase", fontSize: 12 }}>
                     {game.video_source}
+                  </TableCell>
+                  <TableCell align="right">{game.play_count ?? 0}</TableCell>
+                  <TableCell>
+                    {game.reviewed && (
+                      <Chip label="Reviewed" color="success" size="small" />
+                    )}
                   </TableCell>
                   <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                     <IconButton

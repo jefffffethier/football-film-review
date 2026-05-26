@@ -21,6 +21,8 @@ interface FilmStore {
   playing: boolean;
   playbackRate: number;
   playerRef: RefObject<PlayerRef | null>;
+  duration: number;
+  draftTiming: { start: number; end: number } | null;
 
   setGame: (game: Game) => void;
   setPlays: (plays: Play[]) => void;
@@ -34,6 +36,8 @@ interface FilmStore {
   setCurrentPlayIndex: (i: number | null) => void;
   setPlaying: (v: boolean) => void;
   setPlaybackRate: (r: number) => void;
+  setDuration: (d: number) => void;
+  setDraftTiming: (t: { start: number; end: number } | null) => void;
 }
 
 export const useFilmStore = create<FilmStore>((set) => ({
@@ -47,6 +51,8 @@ export const useFilmStore = create<FilmStore>((set) => ({
   playing: false,
   playbackRate: 1,
   playerRef: createRef<PlayerRef | null>(),
+  duration: 0,
+  draftTiming: null,
 
   setGame: (game) => set({ game }),
   setPlays: (plays) => set({ plays }),
@@ -65,4 +71,6 @@ export const useFilmStore = create<FilmStore>((set) => ({
   setCurrentPlayIndex: (i) => set({ currentPlayIndex: i }),
   setPlaying: (v) => set({ playing: v }),
   setPlaybackRate: (r) => set({ playbackRate: r }),
+  setDuration: (d) => set({ duration: d }),
+  setDraftTiming: (t) => set({ draftTiming: t }),
 }));

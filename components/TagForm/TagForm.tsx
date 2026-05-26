@@ -4,13 +4,23 @@ import { useState, useEffect } from "react";
 import {
   Box,
   Button,
+  Collapse,
   MenuItem,
+  Slider,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useFilmStore } from "@/store/filmStore";
 import { Play } from "@/types";
+
+function fmt(secs: number) {
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 interface FormState {
   down: string;
@@ -56,16 +66,25 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
   const taggingMode = useFilmStore((s) => s.taggingMode);
   const editingPlay = useFilmStore((s) => s.editingPlay);
   const game = useFilmStore((s) => s.game);
+  const duration = useFilmStore((s) => s.duration);
+  const setDraftTiming = useFilmStore((s) => s.setDraftTiming);
   const downsConfig = game?.downs_config ?? 4;
 
   const [form, setForm] = useState<FormState>(empty);
   const [endTime, setEndTime] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [timingOpen, setTimingOpen] = useState(false);
+  const [draftStart, setDraftStart] = useState(0);
+  const [draftEnd, setDraftEnd] = useState(0);
 
   useEffect(() => {
     if (taggingMode === "editing" && editingPlay) {
       setForm(playToForm(editingPlay));
+      setDraftStart(editingPlay.start_time);
+      setDraftEnd(editingPlay.end_time);
+      setTimingOpen(false);
+      setDraftTiming(null);
     } else {
       setForm(empty);
       const current = playerRef.current?.getCurrentTime() ?? null;
@@ -73,8 +92,42 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
     }
   }, [taggingMode, editingPlay]);
 
+  useEffect(() => {
+    return () => { setDraftTiming(null); };
+  }, [setDraftTiming]);
+
   function set(field: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleTimingToggle() {
+    const next = !timingOpen;
+    setTimingOpen(next);
+    if (next) {
+      playerRef.current?.seekTo(draftStart, "seconds");
+      setDraftTiming({ start: draftStart, end: draftEnd });
+    } else {
+      setDraftTiming(null);
+    }
+  }
+
+  function handleStartChange(_: Event, val: number | number[]) {
+    const v = val as number;
+    setDraftStart(v);
+    playerRef.current?.seekTo(v, "seconds");
+    setDraftTiming({ start: v, end: draftEnd });
+  }
+
+  function handleEndChange(_: Event, val: number | number[]) {
+    const v = val as number;
+    setDraftEnd(v);
+    playerRef.current?.seekTo(v, "seconds");
+    setDraftTiming({ start: draftStart, end: v });
+  }
+
+  function handleCancel() {
+    setDraftTiming(null);
+    onCancel();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -86,6 +139,8 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
     const payload =
       taggingMode === "editing" && editingPlay
         ? {
+            start_time: draftStart,
+            end_time: draftEnd,
             down,
             yard_line: form.yard_line ? Number(form.yard_line) : null,
             field_zone: form.field_zone || null,
@@ -234,6 +289,51 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
             fullWidth
           />
 
+          {taggingMode === "editing" && (
+            <Box>
+              <Button
+                size="small"
+                variant="outlined"
+                color="inherit"
+                startIcon={timingOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                onClick={handleTimingToggle}
+                sx={{ textTransform: "none", width: "100%", justifyContent: "flex-start" }}
+              >
+                Adjust Timing
+              </Button>
+              <Collapse in={timingOpen}>
+                <Stack spacing={1.5} sx={{ pt: 1.5 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Start — {fmt(draftStart)}
+                    </Typography>
+                    <Slider
+                      size="small"
+                      min={0}
+                      max={draftEnd}
+                      step={0.25}
+                      value={draftStart}
+                      onChange={handleStartChange}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      End — {fmt(draftEnd)}
+                    </Typography>
+                    <Slider
+                      size="small"
+                      min={draftStart}
+                      max={duration || draftEnd}
+                      step={0.25}
+                      value={draftEnd}
+                      onChange={handleEndChange}
+                    />
+                  </Box>
+                </Stack>
+              </Collapse>
+            </Box>
+          )}
+
           {error && (
             <Typography variant="caption" color="error">
               {error}
@@ -250,7 +350,7 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
             >
               {loading ? "Saving…" : "Save"}
             </Button>
-            <Button onClick={onCancel} size="small" disabled={loading} fullWidth>
+            <Button onClick={handleCancel} size="small" disabled={loading} fullWidth>
               Cancel
             </Button>
           </Box>

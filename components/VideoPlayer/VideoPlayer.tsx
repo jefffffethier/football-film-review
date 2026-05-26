@@ -35,6 +35,8 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
   const currentPlayIndex = useFilmStore((s) => s.currentPlayIndex);
   const pendingStart = useFilmStore((s) => s.pendingStart);
   const setPlaying = useFilmStore((s) => s.setPlaying);
+  const setStoreDuration = useFilmStore((s) => s.setDuration);
+  const draftTiming = useFilmStore((s) => s.draftTiming);
 
   const [url, setUrl] = useState("");
   const [loadError, setLoadError] = useState(false);
@@ -151,7 +153,7 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
             onProgress={({ playedSeconds }) => {
               if (!dragging.current) setCurrentTime(playedSeconds);
             }}
-            onDuration={setDuration}
+            onDuration={(d) => { setDuration(d); setStoreDuration(d); }}
             onError={() => setLoadError(true)}
             width="100%"
             height="100%"
@@ -274,12 +276,29 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
                     left: `${(play.start_time / duration) * 100}%`,
                     width: `${Math.max(0.4, ((play.end_time - play.start_time) / duration) * 100)}%`,
                     bgcolor:
-                      i === currentPlayIndex ? "primary.main" : "primary.dark",
+                      i === currentPlayIndex ? "#a3e635" : "primary.dark",
                     borderRadius: 0.5,
                     opacity: i === currentPlayIndex ? 1 : 0.6,
                   }}
                 />
               ))}
+
+            {/* Draft timing overlay while adjusting in edit form */}
+            {draftTiming && duration > 0 && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: -3,
+                  height: 10,
+                  left: `${(draftTiming.start / duration) * 100}%`,
+                  width: `${Math.max(0.4, ((draftTiming.end - draftTiming.start) / duration) * 100)}%`,
+                  bgcolor: "warning.main",
+                  borderRadius: 0.5,
+                  opacity: 0.75,
+                  pointerEvents: "none",
+                }}
+              />
+            )}
 
             {/* Pending start marker (S pressed, waiting for E) */}
             {pendingStart !== null && duration > 0 && (
