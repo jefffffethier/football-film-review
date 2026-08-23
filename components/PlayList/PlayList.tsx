@@ -1,20 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Box, MenuItem, TextField, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useFilmStore } from "@/store/filmStore";
-import { Play, PlayType, PlayResult } from "@/types";
+import { Play, PlayType, PlayResult, Possession } from "@/types";
 
-const PLAY_TYPES: PlayType[] = ["run", "pass", "kick", "punt", "penalty"];
+const PLAY_TYPES: PlayType[] = ["run", "pass", "kick", "punt", "penalty", "pat"];
 
 const TYPE_LABELS: Record<PlayType, string> = {
   run: "RUN",
   pass: "PASS",
-  kick: "KICK",
+  kick: "KICKOFF",
   punt: "PUNT",
   penalty: "PEN",
+  pat: "P.A.T.",
 };
 
 const TYPE_COLORS: Record<PlayType, string> = {
@@ -23,6 +24,7 @@ const TYPE_COLORS: Record<PlayType, string> = {
   kick: "#a78bfa",
   punt: "#a78bfa",
   penalty: "#fbbf24",
+  pat: "#34d399",
 };
 
 // Two tint depths per type — alternating within consecutive same-type runs
@@ -32,6 +34,7 @@ const TYPE_TINTS: Record<PlayType, [string, string]> = {
   kick: ["rgba(167, 139, 250, 0.08)", "rgba(167, 139, 250, 0.16)"],
   punt: ["rgba(167, 139, 250, 0.08)", "rgba(167, 139, 250, 0.16)"],
   penalty: ["rgba(251, 191, 36, 0.08)", "rgba(251, 191, 36, 0.16)"],
+  pat: ["rgba(52, 211, 153, 0.05)", "rgba(52, 211, 153, 0.11)"],
 };
 
 const OUTCOME_FG: Record<PlayResult, string> = {
@@ -54,6 +57,11 @@ const OUTCOME_DOT: Record<PlayResult, string> = {
   turnover: "#f87171",
   sack: "#f87171",
   rouge: "#34d399",
+};
+
+const POSSESSION_COLORS: Record<Possession, string> = {
+  home: "#60a5fa",
+  away: "#fb923c",
 };
 
 const MONO = "ui-monospace, SFMono-Regular, monospace";
@@ -85,18 +93,37 @@ interface Props {
 }
 
 export default function PlayList({ onDelete, readOnly = false }: Props) {
+  const game = useFilmStore((s) => s.game);
   const plays = useFilmStore((s) => s.plays);
   const currentPlayIndex = useFilmStore((s) => s.currentPlayIndex);
   const playerRef = useFilmStore((s) => s.playerRef);
   const setCurrentPlayIndex = useFilmStore((s) => s.setCurrentPlayIndex);
   const setEditingPlay = useFilmStore((s) => s.setEditingPlay);
   const setTaggingMode = useFilmStore((s) => s.setTaggingMode);
+  const lastEditedPlayId = useFilmStore((s) => s.lastEditedPlayId);
+  const setLastEditedPlayId = useFilmStore((s) => s.setLastEditedPlayId);
 
   const [typeFilter, setTypeFilter] = useState<PlayType | null>(null);
+  const [possessionFilter, setPossessionFilter] = useState<Possession | null>(null);
+  const [playNameFilter, setPlayNameFilter] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const editedRowRef = useRef<HTMLDivElement | null>(null);
+
+  const playNameOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const p of plays) {
+      if (p.play_name) names.add(p.play_name);
+    }
+    return Array.from(names).sort();
+  }, [plays]);
 
   const visible = useMemo(
-    () => (typeFilter ? plays.filter((p) => p.play_type === typeFilter) : plays),
-    [plays, typeFilter]
+    () =>
+      plays
+        .filter((p) => !typeFilter || p.play_type === typeFilter)
+        .filter((p) => !possessionFilter || p.possession === possessionFilter)
+        .filter((p) => !playNameFilter || p.play_name === playNameFilter),
+    [plays, typeFilter, possessionFilter, playNameFilter]
   );
 
   const zebra = useMemo(() => computeZebra(visible), [visible]);
@@ -104,10 +131,39 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
   const typeCounts = useMemo(() => {
     const counts: Partial<Record<PlayType, number>> = {};
     for (const p of plays) {
+      if (possessionFilter && p.possession !== possessionFilter) continue;
+      if (playNameFilter && p.play_name !== playNameFilter) continue;
       counts[p.play_type] = (counts[p.play_type] ?? 0) + 1;
     }
     return counts;
-  }, [plays]);
+  }, [plays, possessionFilter, playNameFilter]);
+
+  const totalTypeCount = useMemo(
+    () => Object.values(typeCounts).reduce((sum, n) => sum + (n ?? 0), 0),
+    [typeCounts]
+  );
+
+  const possessionCounts = useMemo(() => {
+    const counts: Partial<Record<Possession, number>> = {};
+    for (const p of plays) {
+      if (typeFilter && p.play_type !== typeFilter) continue;
+      if (playNameFilter && p.play_name !== playNameFilter) continue;
+      if (!p.possession) continue;
+      counts[p.possession] = (counts[p.possession] ?? 0) + 1;
+    }
+    return counts;
+  }, [plays, typeFilter, playNameFilter]);
+
+  const totalPossessionCount = useMemo(
+    () => Object.values(possessionCounts).reduce((sum, n) => sum + (n ?? 0), 0),
+    [possessionCounts]
+  );
+
+  useEffect(() => {
+    if (!lastEditedPlayId || !scrollRef.current || !editedRowRef.current) return;
+    scrollRef.current.scrollTop = editedRowRef.current.offsetTop;
+    setLastEditedPlayId(null);
+  }, [lastEditedPlayId, setLastEditedPlayId]);
 
   function jumpTo(globalIndex: number) {
     const play = plays[globalIndex];
@@ -162,45 +218,67 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
           flexShrink: 0,
         }}
       >
-        <Typography sx={{ color: "#e8eaed", fontSize: 14, fontWeight: 700 }}>
-          Filter by playtype
+        {/* <Typography sx={{ color: "#e8eaed", fontSize: 14, fontWeight: 700 }}>
+          Filters
         </Typography>
         <Typography sx={{ color: "#5c6675", fontSize: 11 }}>
           {plays.length} plays
-        </Typography>
+        </Typography> */}
       </Box>
 
-      {/* Summary strip */}
+      
+      {/* Possession filters */}
       <Box
         sx={{
-          px: 2,
-          pb: "6px",
+          px: 1.5,
+          pb: "10px",
           display: "flex",
-          gap: "12px",
-          flexShrink: 0,
+          gap: "8px",
           flexWrap: "wrap",
+          alignItems: "center",
+          flexShrink: 0,
         }}
       >
-        {PLAY_TYPES.filter((t) => typeCounts[t]).map((t) => (
-          <Box
-            key={t}
-            sx={{ display: "flex", alignItems: "center", gap: "4px" }}
-          >
-            <Box
-              sx={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: TYPE_COLORS[t],
-                flexShrink: 0,
-              }}
-            />
-            <Typography sx={{ color: "#8a93a0", fontSize: 10.5 }}>
-              {typeCounts[t]} {t}
-            </Typography>
-          </Box>
-        ))}
+        <Box sx={{ display: "flex", gap: "5px" }}>
+          {(
+            [
+              { value: null, label: "Both teams", color: "#a3e635" },
+              { value: "home" as Possession, label: game?.home_team || "Home", color: POSSESSION_COLORS.home },
+              { value: "away" as Possession, label: game?.away_team || "Away", color: POSSESSION_COLORS.away },
+            ] as const
+          ).map((opt) => {
+            const active = possessionFilter === opt.value;
+            const pc = opt.color;
+            return (
+              <Box
+                key={opt.label}
+                component="span"
+                onClick={() => setPossessionFilter(active ? null : opt.value)}
+                sx={{
+                  px: "9px",
+                  py: "3px",
+                  background: active ? `${pc}2e` : `${pc}0f`,
+                  border: `1px solid ${active ? `${pc}8c` : `${pc}2e`}`,
+                  borderRadius: "11px",
+                  color: active ? pc : `${pc}8c`,
+                  fontSize: 10.5,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  userSelect: "none",
+                  transition: "all 120ms",
+                }}
+              >
+                {opt.label} (
+                {opt.value === null
+                  ? totalPossessionCount
+                  : possessionCounts[opt.value] ?? 0}
+                )
+              </Box>
+            );
+          })}
+        </Box>
       </Box>
+
 
       {/* Filter chips */}
       <Box
@@ -220,11 +298,10 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
           sx={{
             px: "9px",
             py: "3px",
-            background:
-              typeFilter === null ? "rgba(245,166,35,0.12)" : "transparent",
-            border: `1px solid ${typeFilter === null ? "rgba(245,166,35,0.4)" : "#2a3340"}`,
+            background: typeFilter === null ? "rgba(245,166,35,0.18)" : "rgba(245,166,35,0.06)",
+            border: `1px solid ${typeFilter === null ? "rgba(245,166,35,0.55)" : "rgba(245,166,35,0.18)"}`,
             borderRadius: "11px",
-            color: typeFilter === null ? "#f5a623" : "#8a93a0",
+            color: typeFilter === null ? "#f5a623" : "rgba(245,166,35,0.55)",
             fontSize: 10.5,
             fontWeight: 500,
             cursor: "pointer",
@@ -232,7 +309,7 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
             transition: "all 120ms",
           }}
         >
-          All
+          All ({totalTypeCount})
         </Box>
         {PLAY_TYPES.map((t) => {
           const active = typeFilter === t;
@@ -245,10 +322,10 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
               sx={{
                 px: "9px",
                 py: "3px",
-                background: active ? `${tc}1f` : "transparent",
-                border: `1px solid ${active ? `${tc}66` : "#2a3340"}`,
+                background: active ? `${tc}2e` : `${tc}0f`,
+                border: `1px solid ${active ? `${tc}8c` : `${tc}2e`}`,
                 borderRadius: "11px",
-                color: active ? tc : "#8a93a0",
+                color: active ? tc : `${tc}8c`,
                 fontSize: 10.5,
                 fontWeight: 500,
                 textTransform: "capitalize",
@@ -257,18 +334,56 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
                 transition: "all 120ms",
               }}
             >
-              {t}
+              {(t === "kick" ? "Kickoff" : t === "pat" ? "P.A.T." : t)}{" "}
+              ({typeCounts[t] ?? 0})
             </Box>
           );
         })}
       </Box>
 
+      {/* Play name filters */}
+      <Box
+        sx={{
+          px: 1.5,
+          pb: "10px",
+          display: "flex",
+          gap: "8px",
+          flexWrap: "wrap",
+          alignItems: "center",
+          flexShrink: 0,
+        }}
+      >
+        {playNameOptions.length > 0 && (
+          <TextField
+            select
+            size="small"
+            value={playNameFilter ?? ""}
+            onChange={(e) => setPlayNameFilter(e.target.value || null)}
+            slotProps={{ select: { displayEmpty: true } }}
+            sx={{
+              minWidth: 140,
+              "& .MuiInputBase-root": { fontSize: 11.5, height: 26 },
+            }}
+          >
+            <MenuItem value="">Any play name</MenuItem>
+            {playNameOptions.map((name) => (
+              <MenuItem key={name} value={name}>
+                {name}
+              </MenuItem>
+            ))}
+          </TextField>
+        )}
+      </Box>
+
       {/* Scrollable play rows */}
-      <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0, px: "6px", py: "2px" }}>
+      <Box
+        ref={scrollRef}
+        sx={{ flex: 1, overflowY: "auto", minHeight: 0, px: "6px", py: "2px" }}
+      >
         {visible.length === 0 ? (
           <Box sx={{ p: 2 }}>
             <Typography sx={{ color: "#5c6675", fontSize: 13 }}>
-              No {typeFilter} plays tagged.
+              No plays match the current filters.
             </Typography>
           </Box>
         ) : (
@@ -285,6 +400,7 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
             return (
               <Box
                 key={play.id}
+                ref={play.id === lastEditedPlayId ? editedRowRef : undefined}
                 onClick={() => jumpTo(globalIndex)}
                 sx={{
                   position: "relative",
@@ -366,6 +482,7 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
                     }}
                   >
                     {formatTime(play.start_time)} · #{idx + 1}
+                    {play.play_name ? ` · ${play.play_name}` : ""}
                   </Typography>
                 </Box>
 
@@ -383,15 +500,20 @@ export default function PlayList({ onDelete, readOnly = false }: Props) {
                     }}
                   >
                     <Typography
-                      title="Player — not yet tagged"
+                      title="Possession"
                       sx={{
                         fontSize: 10.5,
-                        color: "#4a5563",
-                        fontStyle: "italic",
+                        color: play.possession ? POSSESSION_COLORS[play.possession] : "#4a5563",
+                        fontStyle: play.possession ? "normal" : "italic",
+                        fontWeight: play.possession ? 600 : 400,
                         fontFamily: MONO,
                       }}
                     >
-                      n/a
+                      {play.possession === "home"
+                        ? game?.home_team || "Home"
+                        : play.possession === "away"
+                          ? game?.away_team || "Away"
+                          : "n/a"}
                     </Typography>
                     <Box
                       title={play.result}

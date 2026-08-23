@@ -8,7 +8,7 @@ export type FieldZone =
   | "red_zone"
   | "opponent_end";
 
-export type PlayType = "run" | "pass" | "kick" | "punt" | "penalty";
+export type PlayType = "run" | "pass" | "kick" | "punt" | "penalty" | "pat";
 
 export type Formation =
   | "shotgun"
@@ -26,6 +26,14 @@ export type PlayResult =
   | "sack"
   | "penalty"
   | "rouge";
+
+export type Possession = "home" | "away";
+
+export interface PlayName {
+  id: string;
+  name: string;
+  created_at: string;
+}
 
 export interface Game {
   id: string;
@@ -52,6 +60,8 @@ export interface Play {
   play_type: PlayType;
   formation: Formation | null;
   result: PlayResult;
+  possession: Possession | null;
+  play_name: string | null;
   notes: string | null;
   share_token: string;
   created_at: string;

@@ -7,9 +7,9 @@ export async function PUT(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { start_time, end_time, down, yard_line, field_zone, play_type, formation, result, notes } = body;
+  const { start_time, end_time, down, yard_line, field_zone, play_type, formation, result, possession, play_name, notes } = body;
 
-  const patch: Record<string, unknown> = { down, yard_line, field_zone, play_type, formation, result, notes };
+  const patch: Record<string, unknown> = { down, yard_line, field_zone, play_type, formation, result, possession, play_name, notes };
   if (start_time !== undefined) patch.start_time = start_time;
   if (end_time !== undefined) patch.end_time = end_time;
 

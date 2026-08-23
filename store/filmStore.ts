@@ -23,6 +23,7 @@ interface FilmStore {
   playerRef: RefObject<PlayerRef | null>;
   duration: number;
   draftTiming: { start: number; end: number } | null;
+  lastEditedPlayId: string | null;
 
   setGame: (game: Game) => void;
   setPlays: (plays: Play[]) => void;
@@ -38,6 +39,7 @@ interface FilmStore {
   setPlaybackRate: (r: number) => void;
   setDuration: (d: number) => void;
   setDraftTiming: (t: { start: number; end: number } | null) => void;
+  setLastEditedPlayId: (id: string | null) => void;
 }
 
 export const useFilmStore = create<FilmStore>((set) => ({
@@ -53,6 +55,7 @@ export const useFilmStore = create<FilmStore>((set) => ({
   playerRef: createRef<PlayerRef | null>(),
   duration: 0,
   draftTiming: null,
+  lastEditedPlayId: null,
 
   setGame: (game) => set({ game }),
   setPlays: (plays) => set({ plays }),
@@ -73,4 +76,5 @@ export const useFilmStore = create<FilmStore>((set) => ({
   setPlaybackRate: (r) => set({ playbackRate: r }),
   setDuration: (d) => set({ duration: d }),
   setDraftTiming: (t) => set({ draftTiming: t }),
+  setLastEditedPlayId: (id) => set({ lastEditedPlayId: id }),
 }));

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
+  Autocomplete,
   Box,
   Button,
   Collapse,
@@ -13,6 +14,9 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
+import IconButton from "@mui/material/IconButton";
 import { useFilmStore } from "@/store/filmStore";
 import { Play } from "@/types";
 
@@ -29,6 +33,8 @@ interface FormState {
   play_type: string;
   formation: string;
   result: string;
+  possession: string;
+  play_name: string;
   notes: string;
 }
 
@@ -39,6 +45,8 @@ const empty: FormState = {
   play_type: "",
   formation: "",
   result: "",
+  possession: "",
+  play_name: "",
   notes: "",
 };
 
@@ -50,6 +58,8 @@ function playToForm(play: Play): FormState {
     play_type: play.play_type,
     formation: play.formation ?? "",
     result: play.result,
+    possession: play.possession ?? "",
+    play_name: play.play_name ?? "",
     notes: play.notes ?? "",
   };
 }
@@ -77,6 +87,14 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
   const [timingOpen, setTimingOpen] = useState(false);
   const [draftStart, setDraftStart] = useState(0);
   const [draftEnd, setDraftEnd] = useState(0);
+  const [playNameOptions, setPlayNameOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/play-names")
+      .then((res) => res.json())
+      .then((names: { name: string }[]) => setPlayNameOptions(names.map((n) => n.name)))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (taggingMode === "editing" && editingPlay) {
@@ -125,6 +143,20 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
     setDraftTiming({ start: draftStart, end: v });
   }
 
+  function nudgeStart(delta: number) {
+    const v = Math.min(Math.max(draftStart + delta, 0), draftEnd);
+    setDraftStart(v);
+    playerRef.current?.seekTo(v, "seconds");
+    setDraftTiming({ start: v, end: draftEnd });
+  }
+
+  function nudgeEnd(delta: number) {
+    const v = Math.min(Math.max(draftEnd + delta, draftStart), duration || draftEnd);
+    setDraftEnd(v);
+    playerRef.current?.seekTo(v, "seconds");
+    setDraftTiming({ start: draftStart, end: v });
+  }
+
   function handleCancel() {
     setDraftTiming(null);
     onCancel();
@@ -136,6 +168,7 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
     setError("");
 
     const down = form.down === "na" || form.down === "" ? null : Number(form.down);
+    const playName = form.play_name.trim() || null;
     const payload =
       taggingMode === "editing" && editingPlay
         ? {
@@ -147,6 +180,8 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
             play_type: form.play_type,
             formation: form.formation || null,
             result: form.result,
+            possession: form.possession || null,
+            play_name: playName,
             notes: form.notes || null,
           }
         : {
@@ -159,8 +194,18 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
             play_type: form.play_type,
             formation: form.formation || null,
             result: form.result,
+            possession: form.possession || null,
+            play_name: playName,
             notes: form.notes || null,
           };
+
+    if (playName && !playNameOptions.includes(playName)) {
+      fetch("/api/play-names", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: playName }),
+      }).catch(() => {});
+    }
 
     const isEdit = taggingMode === "editing" && editingPlay;
     const res = await fetch(
@@ -241,9 +286,9 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
             size="small"
             fullWidth
           >
-            {["run", "pass", "kick", "punt", "penalty"].map((t) => (
+            {["run", "pass", "kick", "punt", "penalty", "pat"].map((t) => (
               <MenuItem key={t} value={t}>
-                {t}
+                {t === "kick" ? "Kickoff" : t === "pat" ? "P.A.T." : t}
               </MenuItem>
             ))}
           </TextField>
@@ -280,6 +325,29 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
           </TextField>
 
           <TextField
+            select
+            label="Possession"
+            value={form.possession}
+            onChange={(e) => set("possession", e.target.value)}
+            size="small"
+            fullWidth
+          >
+            <MenuItem value="home">{game?.home_team || "Home"}</MenuItem>
+            <MenuItem value="away">{game?.away_team || "Away"}</MenuItem>
+          </TextField>
+
+          <Autocomplete
+            freeSolo
+            options={playNameOptions}
+            value={form.play_name}
+            onInputChange={(_, value) => set("play_name", value)}
+            size="small"
+            renderInput={(params) => (
+              <TextField {...params} label="Play Name" fullWidth />
+            )}
+          />
+
+          <TextField
             label="Notes"
             value={form.notes}
             onChange={(e) => set("notes", e.target.value)}
@@ -307,27 +375,63 @@ export default function TagForm({ gameId, onSaved, onCancel }: Props) {
                     <Typography variant="caption" color="text.secondary">
                       Start — {fmt(draftStart)}
                     </Typography>
-                    <Slider
-                      size="small"
-                      min={0}
-                      max={draftEnd}
-                      step={0.25}
-                      value={draftStart}
-                      onChange={handleStartChange}
-                    />
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => nudgeStart(-1)}
+                        disabled={draftStart <= 0}
+                        aria-label="Start minus 1 second"
+                      >
+                        <RemoveIcon fontSize="inherit" />
+                      </IconButton>
+                      <Slider
+                        size="small"
+                        min={0}
+                        max={draftEnd}
+                        step={0.25}
+                        value={draftStart}
+                        onChange={handleStartChange}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={() => nudgeStart(1)}
+                        disabled={draftStart >= draftEnd}
+                        aria-label="Start plus 1 second"
+                      >
+                        <AddIcon fontSize="inherit" />
+                      </IconButton>
+                    </Box>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
                       End — {fmt(draftEnd)}
                     </Typography>
-                    <Slider
-                      size="small"
-                      min={draftStart}
-                      max={duration || draftEnd}
-                      step={0.25}
-                      value={draftEnd}
-                      onChange={handleEndChange}
-                    />
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => nudgeEnd(-1)}
+                        disabled={draftEnd <= draftStart}
+                        aria-label="End minus 1 second"
+                      >
+                        <RemoveIcon fontSize="inherit" />
+                      </IconButton>
+                      <Slider
+                        size="small"
+                        min={draftStart}
+                        max={duration || draftEnd}
+                        step={0.25}
+                        value={draftEnd}
+                        onChange={handleEndChange}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={() => nudgeEnd(1)}
+                        disabled={draftEnd >= (duration || draftEnd)}
+                        aria-label="End plus 1 second"
+                      >
+                        <AddIcon fontSize="inherit" />
+                      </IconButton>
+                    </Box>
                   </Box>
                 </Stack>
               </Collapse>

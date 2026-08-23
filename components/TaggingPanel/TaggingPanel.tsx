@@ -30,6 +30,7 @@ export default function TaggingPanel({ gameId, readOnly = false }: Props) {
   const setTaggingMode = useFilmStore((s) => s.setTaggingMode);
   const setEditingPlay = useFilmStore((s) => s.setEditingPlay);
   const setPendingStart = useFilmStore((s) => s.setPendingStart);
+  const setLastEditedPlayId = useFilmStore((s) => s.setLastEditedPlayId);
 
   const [deleteTarget, setDeleteTarget] = useState<Play | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -37,6 +38,7 @@ export default function TaggingPanel({ gameId, readOnly = false }: Props) {
   function handleSaved(play: Play) {
     if (taggingMode === "editing") {
       updatePlay(play);
+      setLastEditedPlayId(play.id);
     } else {
       addPlay(play);
     }

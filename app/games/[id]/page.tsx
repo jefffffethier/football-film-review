@@ -2,8 +2,7 @@
 
 import { useEffect, use, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Box, Button, Divider, Paper } from "@mui/material";
-import EditOffIcon from "@mui/icons-material/EditOff";
+import { Box, Button, Divider, Paper, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import AppNav from "@/components/AppNav/AppNav";
 import { useFilmStore } from "@/store/filmStore";
@@ -14,6 +13,30 @@ import { Game } from "@/types";
 
 interface Props {
   params: Promise<{ id: string }>;
+}
+
+function KeyCap({ children }: { children: string }) {
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-block",
+        minWidth: 18,
+        px: "6px",
+        py: "1px",
+        bgcolor: "rgba(255, 179, 0, 0.12)",
+        border: "1px solid rgba(255, 179, 0, 0.35)",
+        borderRadius: "4px",
+        color: "primary.main",
+        fontFamily: "monospace",
+        fontSize: 11,
+        fontWeight: 600,
+        textAlign: "center",
+      }}
+    >
+      {children}
+    </Box>
+  );
 }
 
 export default function FilmReviewPage({ params }: Props) {
@@ -151,15 +174,31 @@ export default function FilmReviewPage({ params }: Props) {
         panelOpen={panelOpen}
         onTogglePanel={() => setPanelOpen((o) => !o)}
         actions={
-          <Button
-            size="small"
-            variant={readOnly ? "contained" : "outlined"}
-            color={readOnly ? "warning" : "inherit"}
-            startIcon={readOnly ? <EditOffIcon /> : <EditIcon />}
-            onClick={toggleReadOnly}
-          >
-            {readOnly ? "View only" : "Edit mode"}
-          </Button>
+          readOnly ? (
+            <Typography
+              sx={{
+                fontSize: 12,
+                color: "text.secondary",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.75,
+              }}
+            >
+              Press <KeyCap>Space</KeyCap> to play / pause, <KeyCap>1</KeyCap> /{" "}
+              <KeyCap>2</KeyCap> / <KeyCap>3</KeyCap> to change playback speed
+              (0.25× / 0.5× / 1×)
+            </Typography>
+          ) : (
+            <Button
+              size="small"
+              variant="outlined"
+              color="inherit"
+              startIcon={<EditIcon />}
+              onClick={toggleReadOnly}
+            >
+              Edit mode
+            </Button>
+          )
         }
       />
 

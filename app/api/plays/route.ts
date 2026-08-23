@@ -5,14 +5,14 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const {
     game_id, start_time, end_time, down, yard_line,
-    field_zone, play_type, formation, result, notes,
+    field_zone, play_type, formation, result, possession, play_name, notes,
   } = body;
 
   const { data, error } = await getSupabase()
     .from("plays")
     .insert({
       game_id, start_time, end_time, down, yard_line,
-      field_zone, play_type, formation, result, notes,
+      field_zone, play_type, formation, result, possession, play_name, notes,
     })
     .select()
     .single();

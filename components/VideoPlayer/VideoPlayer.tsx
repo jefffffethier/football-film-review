@@ -146,7 +146,7 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
             playing={playing}
             volume={volume}
             muted={muted}
-            playbackRate={videoSource === "s3" ? playbackRate : 1}
+            playbackRate={playbackRate}
             progressInterval={250}
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}

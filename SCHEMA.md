@@ -51,7 +51,8 @@ CREATE TABLE plays (
                     'pass',
                     'kick',
                     'punt',
-                    'penalty'
+                    'penalty',
+                    'pat'
                   )),
   formation       TEXT CHECK (formation IN (
                     'shotgun',
@@ -70,8 +71,24 @@ CREATE TABLE plays (
                     'penalty',
                     'rouge'
                   )),
+  possession      TEXT CHECK (possession IN ('home', 'away')), -- which side had the ball
+  play_name       TEXT,                        -- optional, reused across plays (see play_names)
   notes           TEXT,                        -- optional coaching notes
   share_token     UUID DEFAULT gen_random_uuid(), -- for shareable links
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+```
+
+---
+
+### `play_names`
+
+Stores the growing set of named plays the coach has used, so the tag form can offer them as suggestions while still allowing new ones to be added on the fly.
+
+```sql
+CREATE TABLE play_names (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name            TEXT NOT NULL UNIQUE,
   created_at      TIMESTAMPTZ DEFAULT now()
 );
 ```
@@ -96,6 +113,8 @@ CREATE INDEX idx_plays_share_token ON plays(share_token);
 - `share_token` is a UUID generated automatically for every play — used to construct public shareable links like `/share/{share_token}`.
 - `downs_config` on the `games` table drives the tagging UI — the down selector shows 1–4 for youth or 1–3 for senior. Defaults to 4.
 - All enum values use snake_case strings for simplicity in a personal project (no separate lookup tables needed).
+- `possession` on a play stores `'home'` or `'away'` (from the `games` row), not the actual team name — this keeps the value stable even if `home_team`/`away_team` text is edited later. The UI resolves it to a team name for display.
+- `play_name` is free text, but the UI sources it from `play_names` as a reusable, growable list (like a combobox) rather than a fixed enum, since these are coach-defined and open-ended.
 
 ---
 
