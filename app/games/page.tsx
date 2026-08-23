@@ -28,6 +28,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import AppNav from "@/components/AppNav/AppNav";
 import GameModal from "@/components/GameModal/GameModal";
 import EditGameModal from "@/components/EditGameModal/EditGameModal";
 import { Game } from "@/types";
@@ -119,24 +120,20 @@ export default function GamesPage() {
   }, [games, teamFilter, sortCol, sortDir]);
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4">🏈 Games</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setModalOpen(true)}
-        >
-          New Game
-        </Button>
-      </Box>
+    <>
+      <AppNav
+        title="🏈 Games"
+        actions={
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setModalOpen(true)}
+          >
+            New Game
+          </Button>
+        }
+      />
+      <Container maxWidth="md" sx={{ py: 4 }}>
 
       {games.length > 0 && (
         <Box sx={{ mb: 2 }}>
@@ -307,6 +304,7 @@ export default function GamesPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+      </Container>
+    </>
   );
 }

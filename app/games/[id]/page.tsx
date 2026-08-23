@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, use } from "react";
+import { useEffect, use, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Box, Button, Divider, IconButton, Paper, Typography } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { Box, Button, Divider, Paper } from "@mui/material";
 import EditOffIcon from "@mui/icons-material/EditOff";
 import EditIcon from "@mui/icons-material/Edit";
+import AppNav from "@/components/AppNav/AppNav";
 import { useFilmStore } from "@/store/filmStore";
 import VideoPlayer from "@/components/VideoPlayer/VideoPlayer";
 import TaggingPanel from "@/components/TaggingPanel/TaggingPanel";
@@ -22,6 +22,7 @@ export default function FilmReviewPage({ params }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const readOnly = searchParams.get("mode") === "view";
+  const [panelOpen, setPanelOpen] = useState(true);
 
   function toggleReadOnly() {
     router.replace(readOnly ? pathname : `${pathname}?mode=view`);
@@ -136,39 +137,31 @@ export default function FilmReviewPage({ params }: Props) {
 
   if (!game) return null;
 
+  const teamsLabel =
+    game.home_team || game.away_team
+      ? `${game.home_team ?? "?"} vs ${game.away_team ?? "?"}`
+      : undefined;
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          px: 2,
-          py: 1,
-          borderBottom: 1,
-          borderColor: "divider",
-        }}
-      >
-        <IconButton size="small" onClick={() => router.push("/games")}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h6">{game.title}</Typography>
-        {(game.home_team || game.away_team) && (
-          <Typography variant="body2" color="text.secondary">
-            {game.home_team ?? "?"} vs {game.away_team ?? "?"}
-          </Typography>
-        )}
-        <Box sx={{ flex: 1 }} />
-        <Button
-          size="small"
-          variant={readOnly ? "contained" : "outlined"}
-          color={readOnly ? "warning" : "inherit"}
-          startIcon={readOnly ? <EditOffIcon /> : <EditIcon />}
-          onClick={toggleReadOnly}
-        >
-          {readOnly ? "View only" : "Edit mode"}
-        </Button>
-      </Box>
+      <AppNav
+        title={game.title}
+        subtitle={teamsLabel}
+        backHref="/games"
+        panelOpen={panelOpen}
+        onTogglePanel={() => setPanelOpen((o) => !o)}
+        actions={
+          <Button
+            size="small"
+            variant={readOnly ? "contained" : "outlined"}
+            color={readOnly ? "warning" : "inherit"}
+            startIcon={readOnly ? <EditOffIcon /> : <EditIcon />}
+            onClick={toggleReadOnly}
+          >
+            {readOnly ? "View only" : "Edit mode"}
+          </Button>
+        }
+      />
 
       <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <Box
@@ -189,20 +182,23 @@ export default function FilmReviewPage({ params }: Props) {
           <ShortcutCheatsheet readOnly={readOnly} />
         </Box>
 
-        <Divider orientation="vertical" flexItem />
-
-        <Paper
-          square
-          elevation={0}
-          sx={{
-            width: 320,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          <TaggingPanel gameId={id} readOnly={readOnly} />
-        </Paper>
+        {panelOpen && (
+          <>
+            <Divider orientation="vertical" flexItem />
+            <Paper
+              square
+              elevation={0}
+              sx={{
+                width: 320,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              <TaggingPanel gameId={id} readOnly={readOnly} />
+            </Paper>
+          </>
+        )}
       </Box>
     </Box>
   );
