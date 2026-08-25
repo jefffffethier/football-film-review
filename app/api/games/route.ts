@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { requireEdit } from "@/lib/auth";
 
 export async function GET() {
   const { data, error } = await getSupabase()
@@ -18,6 +19,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await requireEdit();
+  if (denied) return denied;
+
   const body = await request.json();
   const { title, date, home_team, away_team, video_source, video_ref } = body;
 

@@ -16,7 +16,7 @@ A personal desktop web app for a youth Canadian football coach to watch game foo
 ## Key Design Constraints
 
 - **Desktop-only** — no mobile, no responsive breakpoints needed
-- **Single user** — one coach, one password (env var `APP_PASSWORD`), no auth system
+- **Single user, two roles** — no accounts, just two shared passwords: `APP_PASSWORD_EDIT` grants full edit access, `APP_PASSWORD_VIEW` grants read-only access (all mutating API routes reject view-role sessions with 403)
 - **Canadian football** — 4 downs (youth), 12 players per side
 - `downs_config` on the `games` table drives the tagging UI (4 for youth, 3 for senior)
 - All enum values are snake_case strings — no separate lookup tables
@@ -90,7 +90,8 @@ src/
 ## Environment Variables
 
 ```
-APP_PASSWORD=
+APP_PASSWORD_EDIT=
+APP_PASSWORD_VIEW=
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 AWS_S3_BUCKET=

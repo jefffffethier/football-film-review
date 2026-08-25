@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { requireEdit } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+  const denied = await requireEdit();
+  if (denied) return denied;
+
   const body = await request.json();
   const {
     game_id, start_time, end_time, down, yard_line,

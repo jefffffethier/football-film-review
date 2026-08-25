@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { requireEdit } from "@/lib/auth";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireEdit();
+  if (denied) return denied;
+
   const { id } = await params;
   const body = await request.json();
 
@@ -32,6 +36,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireEdit();
+  if (denied) return denied;
+
   const { id } = await params;
   const { error } = await getSupabase().from("games").delete().eq("id", id);
 

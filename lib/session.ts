@@ -1,7 +1,9 @@
 import { SessionOptions } from "iron-session";
 
+export type Role = "view" | "edit";
+
 export interface SessionData {
-  isLoggedIn: boolean;
+  role?: Role;
 }
 
 export const sessionOptions: SessionOptions = {

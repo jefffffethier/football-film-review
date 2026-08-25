@@ -11,7 +11,7 @@ A personal desktop web app for a youth Canadian football coach. Watch game foota
 - Keyboard-driven tagging — press `S` to mark play start, `E` to mark play end, fill in a form, save
 - Play list — all tagged plays in chronological order, click any to jump, edit or delete inline
 - Share links — public per-play URL (`/share/{token}`) that works without a login
-- Single-password auth — one `APP_PASSWORD` env var, session stored in an encrypted cookie
+- Two-password auth — `APP_PASSWORD_EDIT` (full access) and `APP_PASSWORD_VIEW` (read-only), session stored in an encrypted cookie
 
 ---
 
@@ -103,7 +103,8 @@ cp .env.local.example .env.local
 
 | Variable | Where to get it | Notes |
 |---|---|---|
-| `APP_PASSWORD` | You choose | The password you type on the login screen |
+| `APP_PASSWORD_EDIT` | You choose | Password that grants full edit access |
+| `APP_PASSWORD_VIEW` | You choose | Password that grants read-only (view mode) access |
 | `SESSION_SECRET` | Generate (see below) | Encrypts the session cookie — must be 32+ chars |
 | `SUPABASE_URL` | Supabase → Settings → API | e.g. `https://xxxx.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` | Keep server-side only |
@@ -164,7 +165,7 @@ All four checks (list, write, read via presigned URL, delete) should pass.
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). You'll be prompted for `APP_PASSWORD`, then land on the game library.
+Open [http://localhost:3000](http://localhost:3000). You'll be prompted for a password — enter `APP_PASSWORD_EDIT` or `APP_PASSWORD_VIEW` — then land on the game library.
 
 ---
 

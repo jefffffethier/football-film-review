@@ -23,7 +23,7 @@ const TYPE_COLORS: Record<PlayType, string> = {
   pass: "#60a5fa",
   kick: "#a78bfa",
   punt: "#a78bfa",
-  penalty: "#fbbf24",
+  penalty: "#f87171",
   pat: "#34d399",
 };
 
@@ -33,7 +33,7 @@ const TYPE_TINTS: Record<PlayType, [string, string]> = {
   pass: ["rgba(96, 165, 250, 0.08)", "rgba(96, 165, 250, 0.16)"],
   kick: ["rgba(167, 139, 250, 0.08)", "rgba(167, 139, 250, 0.16)"],
   punt: ["rgba(167, 139, 250, 0.08)", "rgba(167, 139, 250, 0.16)"],
-  penalty: ["rgba(251, 191, 36, 0.08)", "rgba(251, 191, 36, 0.16)"],
+  penalty: ["rgba(248, 113, 113, 0.08)", "rgba(248, 113, 113, 0.16)"],
   pat: ["rgba(52, 211, 153, 0.05)", "rgba(52, 211, 153, 0.11)"],
 };
 

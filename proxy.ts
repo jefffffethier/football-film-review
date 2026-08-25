@@ -6,7 +6,7 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
   const session = await getIronSession<SessionData>(request, response, sessionOptions);
 
-  if (!session.isLoggedIn) {
+  if (!session.role) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set(
       "redirect",

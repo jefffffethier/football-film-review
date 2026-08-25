@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { requireEdit } from "@/lib/auth";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireEdit();
+  if (denied) return denied;
+
   const { id } = await params;
   const body = await request.json();
   const { start_time, end_time, down, yard_line, field_zone, play_type, formation, result, possession, play_name, notes } = body;
@@ -28,6 +32,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = await requireEdit();
+  if (denied) return denied;
+
   const { id } = await params;
   const { error } = await getSupabase().from("plays").delete().eq("id", id);
 

@@ -138,8 +138,9 @@ created_at
 
 ## Security
 
-- Single password stored as environment variable (`APP_PASSWORD`)
-- No user accounts, no roles
+- Two shared passwords stored as environment variables: `APP_PASSWORD_EDIT` (full access) and `APP_PASSWORD_VIEW` (read-only)
+- No user accounts — role is just whichever password was used to log in, tracked in the session cookie
+- Mutating API routes (games/plays/play-names create-update-delete, S3 upload presign) reject view-role sessions with 403
 - Intentionally minimal — this is a personal tool
 
 ---
