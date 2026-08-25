@@ -24,6 +24,12 @@ const SECTIONS = [
       { keys: ["S", "E"], label: "Mark play start / end" },
     ],
   },
+  {
+    title: "Video",
+    items: [
+      { keys: ["Mouse Scroll"], label: "Zoom in / out", mouse: true },
+    ],
+  },
 ];
 
 function KeyCap({ children }: { children: string }) {
@@ -51,7 +57,32 @@ function KeyCap({ children }: { children: string }) {
   );
 }
 
-function KeyGroup({ keys }: { keys: string[] }) {
+function MouseChip({ children }: { children: string }) {
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-block",
+        minWidth: 20,
+        px: "7px",
+        py: "2px",
+        bgcolor: "rgba(255, 179, 0, 0.12)",
+        border: "1px solid rgba(255, 179, 0, 0.35)",
+        borderRadius: "4px",
+        color: "primary.main",
+        fontFamily: "monospace",
+        fontSize: 11,
+        fontWeight: 600,
+        lineHeight: "15px",
+        textAlign: "center",
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+function KeyGroup({ keys, mouse }: { keys: string[]; mouse?: boolean }) {
   return (
     <Box
       component="span"
@@ -71,7 +102,7 @@ function KeyGroup({ keys }: { keys: string[] }) {
               +
             </Box>
           )}
-          <KeyCap>{k}</KeyCap>
+          {mouse ? <MouseChip>{k}</MouseChip> : <KeyCap>{k}</KeyCap>}
         </Box>
       ))}
     </Box>
@@ -100,7 +131,7 @@ export default function ShortcutCheatsheet({ readOnly = false }: { readOnly?: bo
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns: "repeat(4, 1fr)",
             gap: 3.5,
           }}
         >
@@ -142,7 +173,7 @@ export default function ShortcutCheatsheet({ readOnly = false }: { readOnly?: bo
                     >
                       {item.label}
                     </Typography>
-                    <KeyGroup keys={item.keys} />
+                    <KeyGroup keys={item.keys} mouse={"mouse" in item && item.mouse} />
                   </Box>
                 ))}
               </Box>

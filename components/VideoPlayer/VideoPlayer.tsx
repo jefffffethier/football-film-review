@@ -46,6 +46,79 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
   const [muted, setMuted] = useState(false);
   const dragging = useRef(false);
 
+  // Zoom/pan state — transform-origin is the container's top-left, so
+  // (tx, ty) are pixel offsets and scale multiplies from there.
+  const [zoom, setZoom] = useState({ scale: 1, tx: 0, ty: 0 });
+  const zoomContainerRef = useRef<HTMLDivElement | null>(null);
+  const panState = useRef<{ startX: number; startY: number; startTx: number; startTy: number } | null>(null);
+
+  const clampPan = useCallback((tx: number, ty: number, scale: number, rect: { width: number; height: number }) => {
+    const contentW = rect.width * scale;
+    const contentH = rect.height * scale;
+    const minTx = Math.min(0, rect.width - contentW);
+    const minTy = Math.min(0, rect.height - contentH);
+    return {
+      tx: Math.max(minTx, Math.min(0, tx)),
+      ty: Math.max(minTy, Math.min(0, ty)),
+    };
+  }, []);
+
+  const handleZoomWheel = useCallback(
+    (e: React.WheelEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      setZoom((prev) => {
+        const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+        const newScale = Math.max(1, Math.min(8, prev.scale * factor));
+        if (newScale === 1) return { scale: 1, tx: 0, ty: 0 };
+
+        const contentX = (mouseX - prev.tx) / prev.scale;
+        const contentY = (mouseY - prev.ty) / prev.scale;
+        const rawTx = mouseX - contentX * newScale;
+        const rawTy = mouseY - contentY * newScale;
+        const { tx, ty } = clampPan(rawTx, rawTy, newScale, rect);
+        return { scale: newScale, tx, ty };
+      });
+    },
+    [clampPan]
+  );
+
+  const handleZoomMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (zoom.scale === 1) return;
+    panState.current = { startX: e.clientX, startY: e.clientY, startTx: zoom.tx, startTy: zoom.ty };
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const onMove = (ev: MouseEvent) => {
+      const start = panState.current;
+      if (!start) return;
+      const dx = ev.clientX - start.startX;
+      const dy = ev.clientY - start.startY;
+      setZoom((prev) => {
+        const { tx, ty } = clampPan(start.startTx + dx, start.startTy + dy, prev.scale, rect);
+        return { ...prev, tx, ty };
+      });
+    };
+    const onUp = () => {
+      panState.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [zoom.scale, zoom.tx, zoom.ty, clampPan]);
+
+  const handleZoomDoubleClick = useCallback(() => {
+    setZoom({ scale: 1, tx: 0, ty: 0 });
+  }, []);
+
+  // Reset zoom whenever the selected tagged play changes.
+  useEffect(() => {
+    setZoom({ scale: 1, tx: 0, ty: 0 });
+  }, [currentPlayIndex]);
+
   useEffect(() => {
     setLoadError(false);
     if (videoSource === "youtube") {
@@ -139,31 +212,56 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
         <Typography variant="body2" color="text.disabled">Loading…</Typography>
       ) : (
         <>
-          <ReactPlayer
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ref={playerRef as any}
-            url={url}
-            playing={playing}
-            volume={volume}
-            muted={muted}
-            playbackRate={playbackRate}
-            progressInterval={250}
-            onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-            onProgress={({ playedSeconds }) => {
-              if (!dragging.current) setCurrentTime(playedSeconds);
+          <Box
+            ref={zoomContainerRef}
+            sx={{
+              position: "absolute",
+              inset: 0,
+              overflow: "hidden",
+              transformOrigin: "0 0",
+              transform: `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`,
             }}
-            onDuration={(d) => { setDuration(d); setStoreDuration(d); }}
-            onError={() => setLoadError(true)}
-            width="100%"
-            height="100%"
-            controls={false}
-            config={
-              videoSource === "youtube"
-                ? { youtube: { playerVars: { disablekb: 1 } } }
-                : {}
-            }
+          >
+            <ReactPlayer
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ref={playerRef as any}
+              url={url}
+              playing={playing}
+              volume={volume}
+              muted={muted}
+              playbackRate={playbackRate}
+              progressInterval={250}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onProgress={({ playedSeconds }) => {
+                if (!dragging.current) setCurrentTime(playedSeconds);
+              }}
+              onDuration={(d) => { setDuration(d); setStoreDuration(d); }}
+              onError={() => setLoadError(true)}
+              width="100%"
+              height="100%"
+              controls={false}
+              config={
+                videoSource === "youtube"
+                  ? { youtube: { playerVars: { disablekb: 1 } } }
+                  : {}
+              }
+            />
+          </Box>
+
+          {/* Transparent layer that captures wheel/drag gestures for zoom & pan */}
+          <Box
+            onWheel={handleZoomWheel}
+            onMouseDown={handleZoomMouseDown}
+            onDoubleClick={handleZoomDoubleClick}
+            sx={{
+              position: "absolute",
+              inset: 0,
+              cursor: zoom.scale > 1 ? "grab" : "default",
+              "&:active": { cursor: zoom.scale > 1 ? "grabbing" : "default" },
+            }}
           />
+
           {loopActive && (
             <Chip
               icon={<LoopIcon />}
@@ -171,6 +269,20 @@ export default function VideoPlayer({ videoSource, videoRef }: Props) {
               size="small"
               color="primary"
               sx={{ position: "absolute", top: 8, left: 8, pointerEvents: "none" }}
+            />
+          )}
+          {zoom.scale !== 1 && (
+            <Chip
+              label={`${Math.round(zoom.scale * 100)}%`}
+              size="small"
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                pointerEvents: "none",
+                bgcolor: "rgba(0,0,0,0.6)",
+                color: "white",
+              }}
             />
           )}
         </>

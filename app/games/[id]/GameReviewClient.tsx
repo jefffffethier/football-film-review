@@ -38,6 +38,28 @@ function KeyCap({ children }: { children: string }) {
   );
 }
 
+function MouseHintChip({ children }: { children: string }) {
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-block",
+        px: "6px",
+        py: "1px",
+        bgcolor: "rgba(255, 179, 0, 0.12)",
+        border: "1px solid rgba(255, 179, 0, 0.35)",
+        borderRadius: "4px",
+        color: "primary.main",
+        fontSize: 11,
+        fontWeight: 600,
+        textAlign: "center",
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
 export default function GameReviewClient({ params, readOnly }: Props) {
   const { id } = use(params);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -177,7 +199,8 @@ export default function GameReviewClient({ params, readOnly }: Props) {
             >
               Press <KeyCap>Space</KeyCap> to play / pause, <KeyCap>1</KeyCap> /{" "}
               <KeyCap>2</KeyCap> / <KeyCap>3</KeyCap> to change playback speed
-              (0.25× / 0.5× / 1×)
+              (0.25× / 0.5× / 1×), <MouseHintChip>Mouse Scroll</MouseHintChip> on the
+              video to zoom
             </Typography>
           ) : undefined
         }
